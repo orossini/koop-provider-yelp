@@ -1,11 +1,11 @@
 'use strict'
-const YelpClient = require('yelp')
+const YelpClientv3 = require('yelpv3')
 const proj4 = require('proj4')
 const proj = proj4('GOOGLE', 'WGS84')
 const config = require('config')
 const _ = require('lodash')
 const async = require('async')
-const client = new YelpClient(config.yelp)
+const clientv3 = new YelpClientv3(config.yelpv3)
 
 
 module.exports = function (koop) {
@@ -34,11 +34,15 @@ module.exports = function (koop) {
 
 // Wrap the call to Yelp, this will make testing easier and decouple us from the specific client lib
 function searchYelp (query, callback) {
-  client.search(query, function (err, rawResponse) {
-    if (err) return callback(err)
-    const features = translate(rawResponse)
-    console.log('Search returned', features.length, 'results')
-    callback(null, features)
+  clientv3.search(query).then(function (rawResponse) {
+    const features = translate(JSON.parse(rawResponse));
+    console.log(rawResponse);
+    console.log(features);
+    console.log('Search returned', features.length, 'results');
+    callback(null,features);
+    
+  }).catch(function(err){
+    return callback(err);
   })
 }
 
@@ -116,7 +120,7 @@ function formatFeature (biz) {
     type: 'Feature',
     geometry: {
       type: 'Point',
-      coordinates: [loc.coordinate.longitude, loc.coordinate.latitude]
+      coordinates: [biz.coordinates.longitude, biz.coordinates.latitude]
     },
     properties: {
       name: biz.name,
